@@ -286,3 +286,49 @@ class ZannaBolton2020(UVParameterization):
 
     def __repr__(self):
         return f"ZannaBolton2020(κ={self.constant:.2e})"
+
+
+class RingForcing(QParameterization):
+    r"""Force PV in spectral space on a ring
+    """
+
+    def __init__(self, k_in_forc=0, k_out_forc=0, mag_noise_forc=0):
+        r"""
+        Parameters
+        ----------
+        k_in_forc : number
+            Inner wave number of the ring
+            Defaults to 0.0.
+        k_out_forc : number
+            Outer wave number of the ring
+            Defaults to 0.0.
+        mag_noise_forc : number
+            Amplitude of the forcing
+        """
+
+        self.k_in_forc = k_in_forc
+        self.k_out_forc = k_out_forc
+        self.mag_noise_forc = mag_noise_forc
+
+    def __call__(self, m):
+
+        nhx,nhy = m.wv.shape
+        wvx = np.sqrt((m.k)**2.+(m.l)**2.)
+        
+        mask = np.ones_like(wvx)
+        mask[wvx<=self.k_in_forc] = 0.
+        mask[wvx>self.k_out_forc] = 0.
+
+        Ring_hat = mask*(np.random.randn(nhx,nhy) +1j*np.random.randn(nhx,nhy))
+
+        Ring = m.ifft( Ring_hat[np.newaxis,:,:] )
+        Ring = Ring - Ring.mean()
+
+
+        dq = self.mag_noise_forc*Ring
+        return dq
+
+    def __repr__(self):
+        return f"RingForcing(k_in_forc={self.k_in_forc}, "\
+                           f"k_out_forc={self.k_out_forc})"
+
